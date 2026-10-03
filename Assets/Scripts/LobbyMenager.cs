@@ -6,20 +6,24 @@ using UnityEngine.SceneManagement;
 public class LobbyManager : MonoBehaviour
 {
     public TMP_Text sessioninfo_TMP;
-    public ISession CurrentSession { get; private set; }
 
     private void Start()
     {
-        var session = SessionMenagers.Instance.CurrentSession;
-        CurrentSession = session;
         GetSessionInfo();
     }
     
     public void GetSessionInfo()
     {
+        if (SessionMenagers.Instance == null)
+        {
+            Debug.LogError("SessionMenagers.Instance == NULL!");
+            return;
+        }
+
         if (SessionMenagers.Instance.CurrentSession == null)
         {
             Debug.LogError("CurrentSession == NULL!");
+            
             return;
         }
 
@@ -33,13 +37,35 @@ public class LobbyManager : MonoBehaviour
             sessioninfo_TMP.text = $"SESSION NAME: {sessionName}\nSESSION CODE: {sessionCode}";
         }
     }
-
+    
     public async void LeaveSession()
     {
-        if (CurrentSession != null)
+        Debug.Log("Leaving session...");
+
+        if (SessionMenagers.Instance == null)
         {
-            await CurrentSession.LeaveAsync();
-            CurrentSession = null;
+            Debug.LogError("SessionMenagers.Instance == NULL!");
+            SceneManager.LoadScene("MainMenu");
+            return;
+        }
+
+        ISession session = SessionMenagers.Instance.CurrentSession;
+
+        if (session != null)
+        {
+            try
+            {
+                await session.LeaveAsync();
+                Debug.Log("Successfully left session.");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Error while leaving session: {e}");
+            }
+            finally
+            {
+                SessionMenagers.Instance.ClearSession();
+            }
         }
 
         SceneManager.LoadScene("MainMenu");
